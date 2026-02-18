@@ -1,0 +1,7 @@
+{
+  "name": "Gold Appraiser Mobile",
+  "description": "Professional gold loan appraisal and calculation tool with digital receipt generation.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
