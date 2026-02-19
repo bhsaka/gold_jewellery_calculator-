@@ -11,7 +11,23 @@ interface PrintReportProps {
   image: string | null;
 }
 
+// Global declaration for html2pdf
+declare var html2pdf: any;
+
 const PrintReport: React.FC<PrintReportProps> = ({ appraiser, customer, articles, totals, loan, image }) => {
+  const handleDownloadPDF = () => {
+    const element = document.getElementById('report-content');
+    const opt = {
+      margin: 10,
+      filename: `GoldLoan_${customer.name || 'Receipt'}_${new Date().toLocaleDateString()}.pdf`,
+      image: { type: 'jpeg', quality: 0.98 },
+      html2canvas: { scale: 2, useCORS: true },
+      jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    };
+    
+    html2pdf().set(opt).from(element).save();
+  };
+
   const numberToWords = (n: number) => {
     if (n === 0) return 'Zero Rupees Only';
     const a = ['', 'One ', 'Two ', 'Three ', 'Four ', 'Five ', 'Six ', 'Seven ', 'Eight ', 'Nine ', 'Ten ', 'Eleven ', 'Twelve ', 'Thirteen ', 'Fourteen ', 'Fifteen ', 'Sixteen ', 'Seventeen ', 'Eighteen ', 'Nineteen '];
@@ -31,7 +47,7 @@ const PrintReport: React.FC<PrintReportProps> = ({ appraiser, customer, articles
       return str + 'Rupees Only';
     };
 
-    return inWords(n);
+    return inWords(Math.floor(n));
   };
 
   const formatDate = (dateStr: string) => {
@@ -41,122 +57,131 @@ const PrintReport: React.FC<PrintReportProps> = ({ appraiser, customer, articles
   };
 
   return (
-    <div className="w-full bg-white p-8 font-sans text-slate-900 border border-slate-200">
-      {/* Header */}
-      <div className="text-center border-b-2 border-slate-900 pb-4 mb-8">
-        <h1 className="text-4xl font-black uppercase tracking-tighter text-[#1a2b4b]">{appraiser.bank}</h1>
-        <p className="text-xs font-black uppercase tracking-[0.3em] text-slate-500 mt-1">Gold Jewellery Loan Details Card / Receipt</p>
-        <p className="text-[10px] text-slate-400 mt-1">{appraiser.branch}</p>
-      </div>
+    <div className="w-full bg-slate-100 min-h-screen flex flex-col items-center p-0">
+      {/* Outer Shell for html2pdf capture */}
+      <div id="report-content" className="w-full max-w-[800px] bg-white p-4 sm:p-6 text-slate-900 border-x border-slate-200">
+        {/* Header */}
+        <div className="text-center border-b-2 border-slate-900 pb-2 mb-4">
+          <h1 className="text-2xl sm:text-3xl font-black uppercase tracking-tighter text-[#1a2b4b]">{appraiser.bank}</h1>
+          <p className="text-[9px] font-black uppercase tracking-[0.4em] text-slate-400 mt-1">Professional Valuation Report</p>
+          <p className="text-[10px] text-slate-500 font-bold mt-1">{appraiser.branch} Branch (Staff ID: {appraiser.code})</p>
+        </div>
 
-      {/* Info Boxes */}
-      <div className="grid grid-cols-2 gap-8 mb-8">
-        <div className="bg-slate-50 p-5 rounded-xl border border-slate-100">
-          <h2 className="text-[10px] font-black uppercase tracking-widest text-slate-400 border-b border-slate-200 pb-2 mb-3">Borrower Details</h2>
-          <div className="space-y-2 text-xs">
-            <p className="flex justify-between"><span className="font-bold text-slate-500 uppercase text-[9px]">Name:</span> <span className="font-black uppercase">{customer.name || '---'}</span></p>
-            <p className="flex justify-between"><span className="font-bold text-slate-500 uppercase text-[9px]">Address:</span> <span className="font-bold text-right max-w-[150px]">{customer.address || '---'}</span></p>
-            <p className="flex justify-between"><span className="font-bold text-slate-500 uppercase text-[9px]">Phone:</span> <span className="font-black">{customer.mobile || '---'}</span></p>
+        {/* Info Grid */}
+        <div className="grid grid-cols-2 gap-4 mb-4">
+          <div className="bg-slate-50 p-3 rounded-lg border border-slate-100">
+            <h2 className="text-[8px] font-black uppercase tracking-widest text-slate-400 border-b border-slate-200 pb-1 mb-1">Pledgor Details</h2>
+            <div className="space-y-0.5 text-[10px]">
+              <p className="flex justify-between"><span className="text-slate-400 uppercase font-bold">Name:</span> <span className="font-black uppercase">{customer.name || '---'}</span></p>
+              <p className="flex justify-between"><span className="text-slate-400 uppercase font-bold">Mobile:</span> <span className="font-bold">{customer.mobile || '---'}</span></p>
+              <p className="text-[8px] text-slate-500 mt-1 leading-tight line-clamp-2 italic">{customer.address}</p>
+            </div>
+          </div>
+          <div className="bg-slate-50 p-3 rounded-lg border border-slate-100">
+            <h2 className="text-[8px] font-black uppercase tracking-widest text-slate-400 border-b border-slate-200 pb-1 mb-1">Loan Metadata</h2>
+            <div className="space-y-0.5 text-[10px]">
+              <p className="flex justify-between"><span className="text-slate-400 uppercase font-bold">Ref ID:</span> <span className="font-black">#{Math.floor(Date.now() / 100000)}</span></p>
+              <p className="flex justify-between"><span className="text-slate-400 uppercase font-bold">Date:</span> <span className="font-bold">{formatDate(loan.date)}</span></p>
+              <p className="flex justify-between"><span className="text-slate-400 uppercase font-bold">Due Date:</span> <span className="font-bold text-slate-400">{formatDate(loan.dueDate)}</span></p>
+            </div>
           </div>
         </div>
-        <div className="bg-slate-50 p-5 rounded-xl border border-slate-100">
-          <h2 className="text-[10px] font-black uppercase tracking-widest text-slate-400 border-b border-slate-200 pb-2 mb-3">Loan Details</h2>
-          <div className="space-y-2 text-xs">
-            <p className="flex justify-between"><span className="font-bold text-slate-500 uppercase text-[9px]">Loan Number:</span> <span className="font-black">{loan.loanNumber || '---'}</span></p>
-            <p className="flex justify-between"><span className="font-bold text-slate-500 uppercase text-[9px]">Date:</span> <span className="font-bold">{formatDate(loan.date)}</span></p>
-            <p className="flex justify-between"><span className="font-bold text-slate-500 uppercase text-[9px]">Due Date:</span> <span className="font-bold">{formatDate(loan.dueDate)}</span></p>
-          </div>
-        </div>
-      </div>
 
-      {/* Jewellery Photo */}
-      <div className="border border-slate-200 rounded-2xl p-6 mb-8 text-center bg-white shadow-sm">
-        <h3 className="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-4">Jewellery Photo</h3>
-        <div className="flex justify-center">
-          {image ? (
-            <div className="border-4 border-white shadow-xl rounded-lg overflow-hidden max-w-[400px]">
-              <img src={image} alt="Collateral" className="w-full h-auto max-h-[300px] object-contain" />
-            </div>
-          ) : (
-            <div className="w-full h-48 bg-slate-50 border-2 border-dashed border-slate-100 flex items-center justify-center text-slate-300 italic font-bold">
-              NO IMAGE PROVIDED
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Table */}
-      <div className="rounded-2xl overflow-hidden border border-slate-200 mb-8 shadow-sm">
-        <table className="w-full text-[10px] text-center">
-          <thead className="bg-slate-900 text-white uppercase tracking-tighter">
-            <tr>
-              <th className="p-3 border-r border-slate-800">S.No</th>
-              <th className="p-3 border-r border-slate-800 text-left">Item</th>
-              <th className="p-3 border-r border-slate-800">No. of Items</th>
-              <th className="p-3 border-r border-slate-800">Gross (g)</th>
-              <th className="p-3">Net (g)</th>
-            </tr>
-          </thead>
-          <tbody className="bg-white font-bold">
-            {articles.map((art, idx) => (
-              <tr key={art.id} className="border-t border-slate-100">
-                <td className="p-3 border-r border-slate-100 text-slate-400">{idx + 1}</td>
-                <td className="p-3 border-r border-slate-100 text-left uppercase text-slate-900">{art.name}</td>
-                <td className="p-3 border-r border-slate-100">{art.qty}</td>
-                <td className="p-3 border-r border-slate-100">{art.gross.toFixed(3)}</td>
-                <td className="p-3 text-slate-900 font-black">{art.net.toFixed(3)}</td>
+        {/* Main Table - Zero Padding */}
+        <div className="rounded-lg overflow-hidden border border-slate-300 mb-4">
+          <table className="w-full text-[10px] text-center border-collapse">
+            <thead className="bg-slate-900 text-white uppercase tracking-tighter">
+              <tr>
+                <th className="p-1.5 border-r border-slate-700 w-8">SN</th>
+                <th className="p-1.5 border-r border-slate-700 text-left">Article Description</th>
+                <th className="p-1.5 border-r border-slate-700">Qty</th>
+                <th className="p-1.5 border-r border-slate-700">Gross</th>
+                <th className="p-1.5">Net Wt</th>
               </tr>
-            ))}
-          </tbody>
-          <tfoot className="bg-slate-900 text-white font-black uppercase tracking-tighter">
-            <tr>
-              <td colSpan={2} className="p-3 text-left">Total</td>
-              <td className="p-3">{totals.qty}</td>
-              <td className="p-3">{totals.gross.toFixed(3)}</td>
-              <td className="p-3">{totals.net.toFixed(3)}</td>
-            </tr>
-          </tfoot>
-        </table>
-      </div>
-
-      {/* Sanction Amount */}
-      <div className="bg-[#e6f9f0] border-2 border-[#a7f3d0] rounded-2xl p-6 mb-16 relative overflow-hidden">
-        <div className="absolute top-0 right-0 p-4 opacity-5">
-           <i className="fas fa-check-double text-6xl text-emerald-900"></i>
+            </thead>
+            <tbody className="bg-white font-bold">
+              {articles.map((art, idx) => (
+                <tr key={art.id} className="border-t border-slate-200">
+                  <td className="p-1 border-r border-slate-200 text-slate-400">{idx + 1}</td>
+                  <td className="p-1 border-r border-slate-200 text-left uppercase text-slate-900 truncate">{art.name}</td>
+                  <td className="p-1 border-r border-slate-200">{art.qty}</td>
+                  <td className="p-1 border-r border-slate-200">{art.gross.toFixed(3)}</td>
+                  <td className="p-1 text-slate-900 font-black">{art.net.toFixed(3)}</td>
+                </tr>
+              ))}
+            </tbody>
+            <tfoot className="bg-slate-100 text-slate-900 font-black uppercase tracking-tighter border-t-2 border-slate-900">
+              <tr>
+                <td colSpan={2} className="p-1.5 text-left">Consolidated Totals</td>
+                <td className="p-1.5">{totals.qty}</td>
+                <td className="p-1.5">{totals.gross.toFixed(3)}</td>
+                <td className="p-1.5">{totals.net.toFixed(3)}g</td>
+              </tr>
+            </tfoot>
+          </table>
         </div>
-        <p className="text-[10px] font-black uppercase tracking-widest text-[#065f46] mb-1">Sanction Amount:</p>
-        <p className="text-4xl font-black text-[#064e3b]">₹ {loan.sanctionAmount.toLocaleString('en-IN')}</p>
-        <p className="text-[11px] font-bold text-[#065f46] mt-2 italic capitalize">{numberToWords(loan.sanctionAmount)}</p>
-      </div>
 
-      {/* Signature Section */}
-      <div className="grid grid-cols-2 gap-20 pt-10 mb-20">
-        <div className="text-center">
-          <div className="border-t-2 border-slate-900 pt-2">
-            <p className="text-[10px] font-black uppercase tracking-widest text-slate-900">Borrower Signature</p>
+        {/* Collateral Image - Compact */}
+        {image && (
+          <div className="mb-4">
+            <h2 className="text-[8px] font-black uppercase tracking-widest text-slate-400 mb-1 border-b border-slate-100 pb-0.5">Asset Visual Record</h2>
+            <div className="border border-slate-200 rounded-lg overflow-hidden bg-slate-50 flex justify-center p-1">
+              <img 
+                src={image} 
+                alt="Collateral" 
+                className="max-h-[140px] w-auto object-contain"
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Amount Box */}
+        <div className="bg-[#f0fdf4] border border-[#bbf7d0] rounded-xl p-3 mb-4 flex items-center justify-between">
+          <div>
+            <p className="text-[8px] font-black uppercase tracking-widest text-[#166534] mb-0.5">Disbursed Amount:</p>
+            <p className="text-2xl font-black text-[#14532d]">₹ {loan.sanctionAmount.toLocaleString('en-IN')}/-</p>
+            <p className="text-[9px] font-bold text-[#166534] italic capitalize opacity-80 mt-0.5 line-clamp-1">
+              {numberToWords(loan.sanctionAmount)}
+            </p>
+          </div>
+          <div className="w-12 h-12 rounded-full border-4 border-[#166534]/10 flex items-center justify-center">
+             <i className="fas fa-check text-[#166534] text-xl"></i>
           </div>
         </div>
-        <div className="text-center">
-          <div className="border-t-2 border-slate-900 pt-2">
-            <p className="text-[10px] font-black uppercase tracking-widest text-slate-900">Branch Manager Signature</p>
+
+        {/* Footer/Signatures */}
+        <div className="grid grid-cols-2 gap-8 pt-6">
+          <div className="text-center">
+            <div className="border-t border-slate-900 pt-1">
+              <p className="text-[8px] font-black uppercase tracking-widest">Borrower's Signature</p>
+            </div>
           </div>
+          <div className="text-center">
+            <div className="border-t border-slate-900 pt-1">
+              <p className="text-[8px] font-black uppercase tracking-widest">Authorized Appraiser</p>
+              <p className="text-[7px] text-slate-400 font-bold mt-0.5">({appraiser.name})</p>
+            </div>
+          </div>
+        </div>
+        
+        <div className="mt-6 pt-2 border-t border-dotted border-slate-200 text-center">
+           <p className="text-[7px] text-slate-300 font-medium uppercase tracking-widest italic">Digitally Generated via GoldPro Enterprise v2.0</p>
         </div>
       </div>
 
-      {/* Disclaimer */}
-      <div className="bg-rose-50 border border-rose-100 p-4 text-center rounded-xl">
-        <p className="text-[10px] font-black text-rose-900 uppercase leading-relaxed">
-          Keep this card/receipt safely and this card/receipt has to be returned at the time of delivery of gold ornaments.
-        </p>
-      </div>
-
-      {/* Print Button */}
-      <div className="mt-10 flex justify-center no-print">
+      {/* Action Bar - No Print */}
+      <div className="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md p-4 flex flex-col sm:flex-row justify-center gap-3 no-print border-t border-slate-200 z-50">
         <button 
-          onClick={() => window.print()}
-          className="bg-indigo-600 text-white px-10 py-4 rounded-xl font-black text-sm uppercase tracking-widest shadow-2xl hover:bg-indigo-500 transition-all flex items-center gap-3"
+          onClick={handleDownloadPDF} 
+          className="bg-emerald-600 hover:bg-emerald-700 text-white px-8 py-3.5 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl flex items-center justify-center gap-3 transition-all active:scale-95"
         >
-          <i className="fas fa-print"></i> Print / Save as PDF
+          <i className="fas fa-file-pdf text-lg"></i> Download PDF
+        </button>
+        <button 
+          onClick={() => window.print()} 
+          className="bg-slate-800 hover:bg-slate-900 text-white px-8 py-3.5 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl flex items-center justify-center gap-3 transition-all active:scale-95"
+        >
+          <i className="fas fa-print text-lg"></i> Print Receipt
         </button>
       </div>
     </div>
